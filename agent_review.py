@@ -97,6 +97,8 @@ def finding_text(issue: dict) -> str:
 def show_scan(result: dict) -> None:
     report, risk, _, _ = report_parts(result)
     print("\n" + "-" * 72)
+    if isinstance(report.get("metadata"), dict) and report["metadata"].get("demo") is True:
+        print("DEMO: simulated result, not a real security scan.")
     print(f"Skill: {visible(result['skill'])}")
     print(f"Risk score: {visible(risk.get('score', 'not reported'))}/100 (higher = more risk)")
     print(f"Severity: {visible(risk.get('severity', 'not reported'))}")

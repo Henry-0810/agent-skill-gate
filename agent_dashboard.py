@@ -122,6 +122,8 @@ def render_dashboard(records: list[dict], *, title: str = "Backup skill scan das
         "| # | Skill | Agent | Recommendation | Risk / 100 | Coverage | Findings | Highest finding | Recorded decision |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
+    if any(isinstance(report_parts(record)[0].get("metadata"), dict) and report_parts(record)[0]["metadata"].get("demo") is True for record in records):
+        lines[2:2] = ["**DEMO: SIMULATED RESULTS — not a real security scan.**", ""]
     for index, result in enumerate(records, 1):
         _, risk, completeness, issues = report_parts(result)
         highest = highest_finding(issues)

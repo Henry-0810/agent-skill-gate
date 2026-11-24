@@ -27,6 +27,40 @@ Default: **no existing skills are overwritten**, symlinks and special files in s
 
 ## Guided setup and review of existing skills
 
+### Repeatable wizard test (no reset of your real skills)
+
+Run this as many times as you want from the repository:
+
+```bash
+python3 agent_skill_gate.py setup --demo
+```
+
+Every run creates a fresh temporary profile with sample agent directories, a vault, staging, backups and its own Downloads folder. You use the real setup wizard: initialize, migrate the sample folders, compare scans, select SAFE rows together and accept or decline CAUTION. The default uses clearly labelled, fixed **simulated** SAFE, CAUTION, incomplete and blocked results; Docker and Watchman are not needed. Intentional blocked fixtures are expected demo outcomes, not a failed test. A fully completed simulated demo exits 0 when those fixtures behave as expected.
+
+Temporary skills, scans, JSON/Markdown reports, logs and links are deleted on normal exit or Ctrl-C. Your real skills, staging, backups, Downloads and Watchman configuration are untouched. A forced process kill or machine crash can leave the printed temporary folder behind; do not delete your real staging directory as a reset procedure.
+
+To inspect the generated files after the wizard closes:
+
+```bash
+python3 agent_skill_gate.py setup --demo --keep-demo
+```
+
+The command prints the retained profile path. The next run still starts fresh; it does not reuse that profile. To test the actual constrained SkillSpector Docker command on the harmless sample skills:
+
+```bash
+python3 agent_skill_gate.py setup --demo --real-scan
+```
+
+Real-scanner mode needs your already-built local image and a running Docker runtime; real verdicts may differ from the simulated scenarios. Docker uses your existing connection configuration, but receives only temporary sample payloads. Both modes disable notifications and Watchman registration, queries and backlog processing. `--keep-demo` may also be combined with `--real-scan`. Custom `--staging`, `--vault` or `--report-output` paths are rejected in demo mode so the demo cannot accidentally use a real destination. Inherited staging/vault settings are ignored. The demo requires a terminal; it does not add a headless approval option to normal setup.
+
+For repeatable noninteractive regression tests, run:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+### Configure your real installation
+
 For personal use, this is a cooperative pre-install review gate: it preserves originals, scans snapshots, applies an installation policy, and records decisions. It is not a filesystem firewall, a guarantee that approved code is safe to execute, or a replacement for reviewing what an agent can access. A working link alone does not prove that scanning or Watchman delivery works.
 
 Build the pinned scanner image using the instructions in **Scanner and watcher setup** below, then start the guided flow:

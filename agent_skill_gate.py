@@ -872,6 +872,7 @@ def watchman_registered(stage: Path, vault: Path) -> bool:
 def guided_setup(
     stage: Path, vault: Path, agents: tuple[str, ...], *, allow_caution: bool = True,
     report_output: Path | None = None,
+    demo_mode: bool = False,
 ) -> int:
     require_terminal()
     print("\nAGENT SKILL GATE — SETUP\n" + "=" * 72)
@@ -909,6 +910,9 @@ def guided_setup(
     print("\n[3/4] Backup scan and installation choices\n" + "-" * 72)
     result = review_backups(stage, vault, agents, allow_caution=allow_caution, check_scanner=False, report_output=report_output)
     print("\n[4/4] Future submissions\n" + "-" * 72)
+    if demo_mode:
+        print("Demo: Watchman is disabled. No daemon queries, registrations or backlog processing.")
+        return result
     try:
         registered = watchman_registered(stage, vault)
     except (OSError, ValueError, TypeError, RuntimeError, subprocess.SubprocessError):
@@ -952,6 +956,9 @@ def main() -> int:
         "verify-links", help="Read-only verification of agent skill links"
     )
     setup = commands.add_parser("setup", help="Interactive setup, backup review and optional Watchman registration")
+    setup.add_argument("--demo", action="store_true", help="Repeatable isolated wizard with sample skills; cleans up on exit")
+    setup.add_argument("--real-scan", action="store_true", help="With --demo, use real Docker scans instead of simulated results")
+    setup.add_argument("--keep-demo", action="store_true", help="With --demo, retain the temporary profile and reports for inspection")
     review = commands.add_parser("review-backups", help="Scan backups, compare results and choose installations")
     export = commands.add_parser("export-report", help="Export saved backup scans to a Markdown dashboard without rescanning")
     export.add_argument("--output", type=Path, help="New .md output file (default: your Downloads folder)")
@@ -971,6 +978,11 @@ def main() -> int:
     )
     add.add_argument("source", type=Path)
     args = parser.parse_args()
+    if args.command == "setup":
+        if (args.real_scan or args.keep_demo) and not args.demo:
+            parser.error("--real-scan and --keep-demo require --demo")
+        if args.demo and (args.staging or args.vault or args.report_output):
+            parser.error("--demo owns its temporary paths; do not combine it with --staging, --vault or --report-output")
     stage, vault = paths()
     if args.staging:
         stage = args.staging.expanduser().absolute()
@@ -982,6 +994,9 @@ def main() -> int:
         elif args.command == "verify-links":
             return verify_links(vault, args.agents)
         elif args.command == "setup":
+            if args.demo:
+                from agent_demo import run_demo
+                return run_demo(sys.modules[__name__], args.agents, real_scan=args.real_scan, keep=args.keep_demo, allow_caution=not args.safe_only)
             return guided_setup(stage, vault, args.agents, allow_caution=not args.safe_only, report_output=args.report_output)
         elif args.command == "review-backups":
             return review_backups(stage, vault, args.agents, allow_caution=not args.safe_only, report_output=args.report_output)
